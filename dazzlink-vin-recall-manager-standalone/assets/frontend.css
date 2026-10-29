@@ -62,14 +62,48 @@
 .dvrms-result--loading,
 .dvrms-result--match,
 .dvrms-result--no-match,
+.dvrms-result--not-found,
 .dvrms-result--error {
     display: block;
 }
 
+/* Override in the theme, e.g. .dvrms-search { --dvrms-match: #b45309; } */
 .dvrms-result--match,
 .dvrms-result--no-match,
+.dvrms-result--not-found,
 .dvrms-result--error {
     border: 1px solid currentColor;
+    border-left-width: 4px;
+}
+
+.dvrms-result--match { border-color: var(--dvrms-match, #d97706); }
+.dvrms-result--no-match { border-color: var(--dvrms-no-match, #2f855a); }
+.dvrms-result--not-found { border-color: var(--dvrms-not-found, #718096); }
+.dvrms-result--error { border-color: var(--dvrms-error, #c53030); }
+
+.dvrms-result p {
+    margin: 0;
+}
+
+.dvrms-result__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 12px !important;
+}
+
+.dvrms-cta {
+    display: inline-block;
+    padding: 10px 18px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.dvrms-phone {
+    font-weight: 600;
 }
 
 @media (max-width: 640px) {

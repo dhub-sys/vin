@@ -1,4 +1,4 @@
-Dazzlink VIN Recall Manager Standalone 3.0.2
+Dazzlink VIN Recall Manager Standalone 3.1.0
 ===========================================
 API-only IAS/iDMS integration. No CSV, no Contact Form 7.
 Shortcode: [vin_recall_search]
@@ -20,9 +20,21 @@ Requirements: WordPress 6.2+, PHP 7.4+, OpenSSL, outbound HTTPS access to factor
 API SETTINGS
 - Auth / Token endpoint: ολόκληρο το URL που έστειλε το εργοστάσιο,
   συνήθως https://HOST/api/auth/getToken. Δεν προστίθεται path αυτόματα.
-- API base URL: ολόκληρο το base με όποιο prefix έδωσαν,
-  π.χ. https://HOST/api/externalIntegration (χωρίς τελικό /v1/eu/...)
-  Το plugin προσθέτει /v1/eu/dms/getUnfinishedTechnologyActivityByVin.
+- API base URL: όπως το έδωσε το εργοστάσιο. Γίνονται δεκτές και οι τρεις μορφές:
+  https://HOST                         → προστίθεται /api/externalIntegration/v1/eu/dms/...
+  https://HOST/api/externalIntegration → προστίθεται /v1/eu/dms/...
+  ολόκληρο το URL .../getUnfinishedTechnologyActivityByVin → χρησιμοποιείται ως έχει.
+  Το τελικό URL εμφανίζεται κάτω από το πεδίο στις ρυθμίσεις.
+
+UAT (Chery Greece, από το email του εργοστασίου)
+- Auth / Token endpoint: https://ipaas-admin-om-sit.omodaglobal.com/api/auth/getToken
+- API base URL:          https://ipaas-om-sit.omodaglobal.com
+- Αποστολή App Secret:   «Όπως δόθηκε», αφού το curl του εργοστασίου στέλνει το
+  app-secret αυτούσιο. Αν το Test Connection αποτύχει, δοκιμάστε «Raw → AES».
+- IP whitelisting: δεν απαιτείται στο UAT.
+- Test VINs (αναμενόμενα): LVTDB21B1SD231930 → 1 ενέργεια, 12 λεπτά
+                           LVTDB21B7ADC42523 → 1 ενέργεια, 6 λεπτά
+                           LVTDB21B7ADC42522 → 1 ενέργεια, 6 λεπτά
 - App ID / App Secret: συμπληρώνονται μόνο στο WordPress admin.
 - Environment: ετικέτα UAT/production. Δεν επιλέγει αυτόματα endpoints και
   δεν διατηρεί ξεχωριστά προφίλ. Αλλάξτε όλα τα στοιχεία όταν αλλάζετε περιβάλλον.
@@ -43,17 +55,25 @@ UTF-8 (όχι HEX/base64). Έλεγχος key 16/24/32 bytes και IV 16 bytes.
 - GET token με headers app-id, app-secret (encrypted HEX), σύμφωνα με το curl του εργοστασίου.
 - Cache token 4 ώρες 55 λεπτά (5 λεπτά πριν το documented TTL 5 ωρών).
 - Lookup POST JSON {"vin":"..."}, headers APP-ID / APP-TOKEN.
-- Μία ανανέωση token σε HTTP 401/403 και επανάληψη lookup.
+- Μία ανανέωση token σε HTTP 401/403 ή σε HTTP 200 με code≠0 χωρίς data object
+  (απόρριψη token από το gateway), και επανάληψη lookup.
 - Μία σύντομη επανάληψη για transport errors ή HTTP 502/503/504.
-- Timeout 12 δευτ. ανά κλήση, redirects απενεργοποιημένα, έλεγχος TLS ενεργός.
+- Timeout 8 δευτ. ανά κλήση και συνολικό όριο 25 δευτ. ανά έλεγχο (token, ανανέωση,
+  επαναλήψεις), κάτω από το συνηθισμένο max_execution_time 30 δευτ. της PHP.
+  Redirects απενεργοποιημένα, έλεγχος TLS ενεργός.
 - Δεν επαναλαμβάνονται HTTP 429 ή άγνωστα business errors.
 - vinExist=true και count>0: εκκρεμείς τεχνικές ενέργειες.
 - vinExist=true και count=0: δεν υπάρχουν εκκρεμείς ενέργειες.
 - vinExist=false: το VIN δεν βρέθηκε (δεν σημαίνει ότι δεν έχει ανακλήσεις).
 - vinExist=null/απουσία, λάθος VIN, ελλιπές payload ή error: αδυναμία ελέγχου.
+- totalLaborMinutes null/απουσία: το αποτέλεσμα εμφανίζεται κανονικά, {minutes}
+  και {duration} μένουν κενά. unfinishedCount δεκτό και ως ακέραιο string.
+- Κενά, παύλες και τελείες στο VIN αφαιρούνται (π.χ. επικόλληση από έγγραφο).
 - Δεν αποθηκεύονται αποτελέσματα VIN και δεν χρησιμοποιείται CSV fallback.
 - Δεν επιστρέφονται ούτε επινοούνται campaign/action code ή description.
-- Τα κείμενα υποστηρίζουν {vin}, {count}, {minutes}, {contact}, ως απλό κείμενο.
+- Τα κείμενα υποστηρίζουν {vin}, {count}, {minutes}, {duration}, {contact}, ως απλό κείμενο.
+- Προαιρετικός σύνδεσμος ραντεβού και τηλέφωνο service: εμφανίζονται ως κουμπί και
+  σύνδεσμος κλήσης όταν υπάρχουν ενέργειες ή το VIN δεν βρέθηκε.
 - Το Test Connection ελέγχει authentication. Το Test VIN ελέγχει iDMS lookup.
 
 ΠΡΟΣΤΑΣΙΑ / ΛΕΙΤΟΥΡΓΙΑ
@@ -80,6 +100,28 @@ VALIDATION SCOPE
 Mock tests and syntax checks are development checks, not factory certification.
 No real credentials are bundled. UAT and production validation must be performed
 on the target WordPress host with known test VINs and confirmed encryption.
+
+CHANGELOG 3.1.0
+- Ξεχωριστό μήνυμα για 1 εκκρεμή ενέργεια («υπάρχει 1 εκκρεμής τεχνική ενέργεια»).
+- Το API base URL γίνεται δεκτό και ως σκέτο host (όπως το δίνει το εργοστάσιο):
+  προστίθεται αυτόματα το /api/externalIntegration.
+- Ανανέωση token και όταν το gateway την απορρίπτει με HTTP 200 + code≠0.
+  Πριν, η φόρμα έβγαζε σφάλμα μέχρι να λήξει το cached token (έως 5 ώρες).
+- Συνολικό χρονικό όριο 25 δευτ. ανά έλεγχο: πριν, ο χειρότερος συνδυασμός
+  επαναλήψεων μπορούσε να ξεπεράσει τα 90 δευτ. και να κοπεί από την PHP.
+- Δεκτό null totalLaborMinutes και unfinishedCount ως string, και VIN στην απάντηση
+  με πεζά ή κενά. Οι υπόλοιποι αυστηροί έλεγχοι παραμένουν.
+- Αφαίρεση κενών, παυλών και τελειών από το VIN (server και browser). Το πεδίο δεν
+  κόβει πλέον επικολλημένο VIN με κενά.
+- Το script ξεκινά και όταν φορτώνεται καθυστερημένα από plugins βελτιστοποίησης.
+- Αφαίρεση κενών αρχής/τέλους από App ID, App Secret, AES και URLs κατά την αποθήκευση.
+- Ελληνικές ετικέτες και επεξηγήσεις στις ρυθμίσεις, εμφάνιση του τελικού URL ερωτήματος.
+- Προειδοποίηση όταν τα αποθηκευμένα secrets δεν αποκρυπτογραφούνται (αλλαγή salts),
+  και ένδειξη UAT. Επαναφορά AES key/IV στις προεπιλογές.
+- Νέα μεταβλητή {duration} (π.χ. «1 ώρα και 35 λεπτά»), σύνδεσμος ραντεβού και
+  τηλέφωνο, ξεχωριστό στυλ για «δεν βρέθηκε».
+- Το Test VIN δείχνει και το μήνυμα που θα δει ο επισκέπτης.
+- uninstall.php: η διαγραφή του plugin αφαιρεί ρυθμίσεις, logs, token και μετρητές.
 
 CHANGELOG 3.0.2
 Διόρθωση token request: app-id και app-secret αποστέλλονται στα headers,
