@@ -1,0 +1,36 @@
+Dazzlink VIN Recall Manager Standalone 3.0.2
+Validation date: 2026-10-16
+
+PASSED
+- PHP 8.3 syntax checks: main plugin and IAS client.
+- JavaScript syntax check (Node.js).
+- 54 PHP assertions using a mocked WordPress/HTTP harness.
+- 9 frontend logic scenarios using Node.js and a DOM/fetch harness.
+- ZIP integrity and expected single plugin-root structure.
+
+Coverage includes documented AES defaults, invalid key rejection, pre-encrypted
+secrets, token caching, bounded token refresh and transport retries, malformed
+responses, ambiguous vinExist, VIN mismatch, business failures, separate unknown
+VIN result, credential encryption at rest, preserved blank secrets, corrupted
+storage, public AJAX results, invalid nonce, server VIN validation, rate limiting,
+admin capability checks, log redaction, independent forms and network errors.
+
+NOT COMPLETED IN THIS ENVIRONMENT
+- Full WordPress installation/upgrade and theme compatibility test.
+- Visual browser inspection; the browser runtime download was unavailable.
+  Frontend CSS is retained from the supplied 2.1.0 standalone form.
+- Live factory authentication or lookup; real credentials were not supplied.
+- Confirmation of factory-specific errors, rate limits and IP allowlisting.
+
+Required release acceptance: install on staging/UAT and validate known VINs
+with positive actions, zero actions, unknown VIN and API outage; check desktop
+and mobile appearance; then switch URLs and credentials for production.
+
+No CSV import or CF7 integration exists in this version.
+
+3.0.2 regression checks: token credentials use headers matching factory curl;
+no credential query parameters or GET body. Existing settings option unchanged.
+
+3.0.2: exact supplied-secret transport, header injection rejection, safe numeric
+code/type diagnostics, and nested token-shape diagnosis tests passed.
+Live factory validation remains pending.
